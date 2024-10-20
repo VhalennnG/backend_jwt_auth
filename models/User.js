@@ -52,4 +52,44 @@ const createUser = (email, password, callback) => {
   });
 };
 
-module.exports = { createUser };
+const loginUser = (email, password, callback) => {
+  let errors = { email: "", password: "" };
+
+  if (!email) errors.email = "Please enter an email";
+  if (!validateEmail(email)) errors.email = "Invalid email format.";
+  if (!password) errors.password = "Please enter your password";
+
+  // Jika ada error validasi, kirim error tanpa melanjutkan eksekusi
+  if (errors.email || errors.password) {
+    return callback({ message: "Validation failed", errors });
+  }
+
+  const lowerCaseEmail = email.toLowerCase();
+
+  const checkEmail = "SELECT * FROM users WHERE email = ?";
+  db.query(checkEmail, [lowerCaseEmail], (err, result) => {
+    if (err) return callback(err);
+
+    if (result.length === 0)
+      return callback({
+        message: "Invalid login credentials",
+        errors: { email: "Email not found" },
+      });
+
+    const hashedPassword = result[0].password;
+    bcrypt.compare(password, hashedPassword, (err, isMatch) => {
+      if (err) return callback(err);
+
+      if (!isMatch) {
+        return callback({
+          message: "Invalid login credentials",
+          errors: { password: "Incorrect password" },
+        });
+      }
+
+      callback(null, { id: result[0].id, email: result[0].email });
+    });
+  });
+};
+
+module.exports = { createUser, loginUser };

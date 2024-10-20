@@ -2,14 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const cookieParser = require("cookie-parser");
+const { requireAuth, checkUser } = require("./middleware/authMiddleware");
 
 const app = express();
+const path = require("path");
 
 // middleware
 app.use(express.json());
 app.use(cookieParser());
 
-const path = require("path");
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 
@@ -22,8 +23,9 @@ app.listen(4000, () => {
 });
 
 // routes
+app.get("*", checkUser);
 app.get("/", (req, res) => res.render("home"));
-app.get("/smoothies", (req, res) => res.render("smoothies"));
+app.get("/smoothies", requireAuth, (req, res) => res.render("smoothies"));
 app.use(authRoutes);
 
 // cookies
